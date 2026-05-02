@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "rym-hide-ratings",
+  "version": "1.0",
+
+  "description": "Hides rateyourmusic album/track ratings until user has rated the album.",
+
+  "icons": {
+    "48": "icons/half-star.png"
+  },
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "borderify@mozilla.org",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["*://rateyourmusic.com/*"],
+      "js": ["rym-hide-ratings.js"]
+    }
+  ]
+}
