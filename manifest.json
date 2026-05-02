@@ -6,7 +6,7 @@
   "description": "Hides rateyourmusic album/track ratings until user has rated the album.",
 
   "icons": {
-    "48": "icons/half-star.png"
+    "96": "icons/half-star.png"
   },
 
   "browser_specific_settings": {
@@ -21,7 +21,8 @@
   "content_scripts": [
     {
       "matches": ["*://rateyourmusic.com/*"],
-      "js": ["rym-hide-ratings.js"]
+      "js": ["rym-hide-ratings.js"],
+      "run_at": "document_start"
     }
   ]
 }
