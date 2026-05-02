@@ -8,12 +8,12 @@ hideStyle.textContent = `
   .page_artist_tracks_track_stats_rating { visibility: hidden; }
   .page_artist_songs_song .song.bolded { font-weight: normal !important; }
   .page_artist_songs_song .metadata-star-bold { display: none !important; }
+  .page_release_section_tracks_track_stats_scores.bold .metadata-star-bold { display: none !important; }
+  .tracklist_line .song.bolded { font-weight: normal !important; }
 `;
 document.documentElement.appendChild(hideStyle);
 
 document.addEventListener("DOMContentLoaded", () => {
-  // check if user is logged in
-
   const mainEl = document.querySelector("html");
   const isLoggedIn = mainEl.classList.contains("logged-in");
   const path = window.location.pathname;
@@ -44,7 +44,81 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         if (rankYear) rankYear.textContent = "?";
         if (rankOvr) rankOvr.textContent = "?";
+
+        // strip bold state from track titles
+        const trackBoldState = Array.from(trackRatings).map(track => {
+          const songLink = track.closest(".tracklist_line")?.querySelector(".song");
+          const starImg = track.closest(".page_release_section_tracks_track_stats_score_star")?.querySelector("img");
+          const wasBolded = songLink?.classList.contains("bolded");
+          songLink?.classList.remove("bolded");
+          starImg?.classList.replace("metadata-star-bold", "metadata-star");
+          return wasBolded;
+        });
+
         hideStyle.remove();
+
+        // add toggle button to track listing header
+        let trackRatingsVisible = false;
+        let trackToggleBtn = null;
+        let separator = null;
+        const trackHeader = document.querySelector("#track_credit_show_link_tracks")?.closest(".release_page_header");
+        if (trackHeader) {
+          trackToggleBtn = document.createElement("div");
+          trackToggleBtn.textContent = "Show ratings";
+          trackToggleBtn.style.cssText =
+            "float:right; display:inline-block; font-size:.8em; color:var(--gen-blue-dark); cursor:pointer; line-height:1.2em;";
+
+          separator = document.createElement("span");
+          separator.textContent = " | ";
+          separator.style.cssText = "float:right; font-size:.8em; line-height:1.2em; margin: 0 4px;";
+
+          trackHeader.appendChild(separator);
+          trackHeader.appendChild(trackToggleBtn);
+
+          trackToggleBtn.addEventListener("click", () => {
+            trackRatingsVisible = !trackRatingsVisible;
+            trackRatings.forEach((track, i) => {
+              track.textContent = trackRatingsVisible ? originalTrackRatings[i] : "?";
+              const songLink = track.closest(".tracklist_line")?.querySelector(".song");
+              const starImg = track
+                .closest(".page_release_section_tracks_track_stats_score_star")
+                ?.querySelector("img");
+              if (trackBoldState[i]) {
+                if (trackRatingsVisible) {
+                  songLink?.classList.add("bolded");
+                  starImg?.classList.replace("metadata-star", "metadata-star-bold");
+                } else {
+                  songLink?.classList.remove("bolded");
+                  starImg?.classList.replace("metadata-star-bold", "metadata-star");
+                }
+              }
+            });
+            trackToggleBtn.textContent = trackRatingsVisible ? "Hide ratings" : "Show ratings";
+          });
+        }
+
+        // add toggle button to rate/catalog header
+        let albumRatingVisible = false;
+        let catalogToggleBtn = null;
+        const catalogHeader = Array.from(document.querySelectorAll(".release_page_header")).find(el =>
+          el.querySelector("h2")?.textContent.includes("Rate/Catalog"),
+        );
+        if (catalogHeader) {
+          catalogToggleBtn = document.createElement("div");
+          catalogToggleBtn.textContent = "Show ratings";
+          catalogToggleBtn.style.cssText =
+            "float:left; display:inline-block; font-size:.8em; color:var(--gen-blue-dark); cursor:pointer; line-height:1.4em; margin:0 6px";
+
+          catalogHeader.appendChild(catalogToggleBtn);
+
+          catalogToggleBtn.addEventListener("click", () => {
+            albumRatingVisible = !albumRatingVisible;
+            avgRating.textContent = albumRatingVisible ? originalAlbumRating : "?";
+            if (rankYear) rankYear.textContent = albumRatingVisible ? originalrankYear : "?";
+            if (rankOvr) rankOvr.textContent = albumRatingVisible ? originalrankOvr : "?";
+            catalogToggleBtn.textContent = albumRatingVisible ? "Hide ratings" : "Show ratings";
+          });
+        }
 
         // watch for user clicking a star to confirm rating
         let clicked = false;
@@ -57,9 +131,19 @@ document.addEventListener("DOMContentLoaded", () => {
             avgRating.textContent = originalAlbumRating;
             trackRatings.forEach((track, i) => {
               track.textContent = originalTrackRatings[i];
+              if (trackBoldState[i]) {
+                track.closest(".tracklist_line")?.querySelector(".song")?.classList.add("bolded");
+                track
+                  .closest(".page_release_section_tracks_track_stats_score_star")
+                  ?.querySelector("img")
+                  ?.classList.replace("metadata-star", "metadata-star-bold");
+              }
             });
             if (rankYear) rankYear.textContent = originalrankYear;
             if (rankOvr) rankOvr.textContent = originalrankOvr;
+            trackToggleBtn?.remove();
+            separator?.remove();
+            catalogToggleBtn?.remove();
             ratingObserver.disconnect();
           }
           clicked = false;
@@ -72,7 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // rated   → real value e.g. "3.5"
       // unrated → "---"
       // so we watch rating_num to determine state rather than checking synchronously
-      const ratingNumObserver = new MutationObserver(() => {
+      const checkRatingNum = () => {
         const val = parseFloat(ratingNum.textContent.trim());
         if (!isNaN(val) && val > 0) {
           // already rated — just reveal
@@ -84,14 +168,15 @@ document.addEventListener("DOMContentLoaded", () => {
           ratingNumObserver.disconnect();
         }
         // val === 0 means still initialising, keep watching
-      });
+      };
 
+      const ratingNumObserver = new MutationObserver(checkRatingNum);
       ratingNumObserver.observe(ratingNum, { childList: true, subtree: true, characterData: true });
+      // check immediately in case RYM already updated before observer was ready (e.g. tab restored from suspend)
+      checkRatingNum();
     } else if (path.startsWith("/artist/")) {
-      // add artist page logic here
       // selectors
       const discoAvgRatings = document.querySelectorAll(".disco_avg_rating");
-      const originalDiscoAvgRatings = Array.from(discoAvgRatings).map(r => r.textContent);
       const songRatings = document.querySelectorAll(".page_artist_tracks_track_stats_rating");
       const originalSongRatings = Array.from(songRatings).map(r => r.textContent);
       const discoCats = document.querySelectorAll(".disco_cat");
