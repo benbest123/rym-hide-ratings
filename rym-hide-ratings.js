@@ -21,45 +21,38 @@ document.addEventListener("DOMContentLoaded", () => {
   if (isLoggedIn) {
     if (path.startsWith("/release/")) {
       // on release page
-      // check if user has rated the album
-      const hasRated = !document.querySelector(".rating_stars.star-0m");
 
-      //selectors
       const avgRating = document.querySelector(".avg_rating");
       const trackRatings = document.querySelectorAll(".page_release_section_tracks_track_stats_rating");
       const albumInfoTable = document.querySelector(".album_info");
       const rank = albumInfoTable.rows[4];
       const rankYear = rank?.querySelectorAll("td b")[0];
       const rankOvr = rank?.querySelectorAll("td b")[1];
+      const ratingNum = document.querySelector(".my_catalog_rating .rating_num");
+      const ratingWidget = document.querySelector(".my_catalog_rating");
+      const ratingStars = document.querySelector(".rating_stars");
 
-      if (!hasRated) {
-        const originalAlbumRating = avgRating.textContent;
-        const originalTrackRatings = Array.from(trackRatings).map(r => r.textContent);
-        const originalrankYear = rankYear?.textContent;
-        const originalrankOvr = rankOvr?.textContent;
+      const originalAlbumRating = avgRating.textContent;
+      const originalTrackRatings = Array.from(trackRatings).map(r => r.textContent);
+      const originalrankYear = rankYear?.textContent;
+      const originalrankOvr = rankOvr?.textContent;
 
-        // set ratings and ranks to '?'
+      const showHidden = () => {
         avgRating.textContent = "?";
         trackRatings.forEach(track => {
           track.textContent = "?";
         });
         if (rankYear) rankYear.textContent = "?";
         if (rankOvr) rankOvr.textContent = "?";
-
-        // reveal elements now showing "?"
         hideStyle.remove();
 
-        // revert to showing rating once user has rated
-        // reveal ratings only after user clicks to confirm a rating
-        const ratingWidget = document.querySelector(".my_catalog_rating");
-        const ratingStars = document.querySelector(".rating_stars");
+        // watch for user clicking a star to confirm rating
         let clicked = false;
-
         ratingWidget.addEventListener("click", () => {
           clicked = true;
         });
 
-        const observer = new MutationObserver(() => {
+        const ratingObserver = new MutationObserver(() => {
           if (clicked && !ratingStars.classList.contains("star-0m")) {
             avgRating.textContent = originalAlbumRating;
             trackRatings.forEach((track, i) => {
@@ -67,15 +60,33 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             if (rankYear) rankYear.textContent = originalrankYear;
             if (rankOvr) rankOvr.textContent = originalrankOvr;
-            observer.disconnect();
+            ratingObserver.disconnect();
           }
           clicked = false;
         });
 
-        observer.observe(ratingStars, { attributes: true, attributeFilter: ["class"] });
-      } else {
-        hideStyle.remove();
-      }
+        ratingObserver.observe(ratingStars, { attributes: true, attributeFilter: ["class"] });
+      };
+
+      // rating_num starts as "0.0" for all albums then RYM updates it async:
+      // rated   → real value e.g. "3.5"
+      // unrated → "---"
+      // so we watch rating_num to determine state rather than checking synchronously
+      const ratingNumObserver = new MutationObserver(() => {
+        const val = parseFloat(ratingNum.textContent.trim());
+        if (!isNaN(val) && val > 0) {
+          // already rated — just reveal
+          hideStyle.remove();
+          ratingNumObserver.disconnect();
+        } else if (isNaN(val)) {
+          // unrated (text is "---" or similar)
+          showHidden();
+          ratingNumObserver.disconnect();
+        }
+        // val === 0 means still initialising, keep watching
+      });
+
+      ratingNumObserver.observe(ratingNum, { childList: true, subtree: true, characterData: true });
     } else if (path.startsWith("/artist/")) {
       // add artist page logic here
       // selectors

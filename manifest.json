@@ -6,7 +6,10 @@
   "description": "Hides rateyourmusic album/track ratings until user has rated the album.",
 
   "icons": {
-    "96": "icons/half-star.png"
+    "32": "icons/star.svg",
+    "64": "icons/star.svg",
+    "96": "icons/star.svg",
+    "128": "icons/star.svg"
   },
 
   "browser_specific_settings": {
