@@ -10,10 +10,14 @@ hideStyle.textContent = `
   .page_artist_songs_song .metadata-star-bold { display: none !important; }
   .page_release_section_tracks_track_stats_scores.bold .metadata-star-bold { display: none !important; }
   .tracklist_line .song.bolded { font-weight: normal !important; }
+  .disco_mainline_recommended { font-weight: normal !important; }
 `;
 document.documentElement.appendChild(hideStyle);
 
 document.addEventListener("DOMContentLoaded", () => {
+  if (document.documentElement.dataset.rymHide) return;
+  document.documentElement.dataset.rymHide = "1";
+
   const mainEl = document.querySelector("html");
   const isLoggedIn = mainEl.classList.contains("logged-in");
   const path = window.location.pathname;
@@ -189,6 +193,8 @@ document.addEventListener("DOMContentLoaded", () => {
           const ratingEl = release.querySelector(".disco_avg_rating");
           ratingEl.dataset.originalRating = ratingEl.textContent;
           ratingEl.textContent = "?";
+          const boldTitle = release.querySelector("b.disco_mainline_recommended");
+          if (boldTitle) boldTitle.style.fontWeight = "normal";
         }
       });
 
@@ -206,8 +212,11 @@ document.addEventListener("DOMContentLoaded", () => {
           discoRatingsVisible = !discoRatingsVisible;
           discoCats.forEach(rel => {
             if (!rel.querySelector(".disco_cat_inner")) {
-              const ratingEl = rel.closest(".disco_release").querySelector(".disco_avg_rating");
+              const release = rel.closest(".disco_release");
+              const ratingEl = release.querySelector(".disco_avg_rating");
               ratingEl.textContent = discoRatingsVisible ? ratingEl.dataset.originalRating : "?";
+              const boldTitle = release.querySelector("b.disco_mainline_recommended");
+              if (boldTitle) boldTitle.style.fontWeight = discoRatingsVisible ? "" : "normal";
             }
           });
           discoToggleBtn.textContent = discoRatingsVisible ? "Hide ratings" : "Show ratings";
