@@ -3,15 +3,18 @@
   "name": "rym-hide-ratings",
   "version": "1.0",
 
-  "description": "Hides rateyourmusic album/track ratings until user has rated the album.",
+  "description": "Hides rateyourmusic release/track ratings until user has rated the release.",
 
   "icons": {
-    "48": "icons/half-star.png"
+    "32": "icons/star.svg",
+    "64": "icons/star.svg",
+    "96": "icons/star.svg",
+    "128": "icons/star.svg"
   },
 
   "browser_specific_settings": {
     "gecko": {
-      "id": "borderify@mozilla.org",
+      "id": "rym-hide-ratings@mozilla.org",
       "data_collection_permissions": {
         "required": ["none"]
       }
@@ -21,7 +24,8 @@
   "content_scripts": [
     {
       "matches": ["*://rateyourmusic.com/*"],
-      "js": ["rym-hide-ratings.js"]
+      "js": ["rym-hide-ratings.js"],
+      "run_at": "document_start"
     }
   ]
 }
