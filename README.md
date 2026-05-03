@@ -4,7 +4,7 @@
 
 Firefox extension that hides rateyourmusic album ratings until you've rated the album yourself, to stop your rating being influenced by the general consensus.
 
-This works on release pages and artist pages.
+This works on release pages and artist pages, and only works if you are logged in.
 
 ### On release pages
 

@@ -18,9 +18,18 @@ document.addEventListener("DOMContentLoaded", () => {
   if (document.documentElement.dataset.rymHide) return;
   document.documentElement.dataset.rymHide = "1";
 
-  const mainEl = document.querySelector("html");
-  const isLoggedIn = mainEl.classList.contains("logged-in");
+  const isLoggedIn = document.documentElement.classList.contains("logged-in");
   const path = window.location.pathname;
+
+  const setTrackBoldStyle = (songLink, starImg, visible) => {
+    if (visible) {
+      songLink?.classList.add("bolded");
+      starImg?.classList.replace("metadata-star", "metadata-star-bold");
+    } else {
+      songLink?.classList.remove("bolded");
+      starImg?.classList.replace("metadata-star-bold", "metadata-star");
+    }
+  };
 
   if (isLoggedIn) {
     if (path.startsWith("/release/")) {
@@ -37,9 +46,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const ratingStars = document.querySelector(".rating_stars");
 
       const originalAlbumRating = avgRating.textContent;
-      const originalTrackRatings = Array.from(trackRatings).map(r => r.textContent);
-      const originalrankYear = rankYear?.textContent;
-      const originalrankOvr = rankOvr?.textContent;
+      const originalTrackRatings = [...trackRatings].map(r => r.textContent);
+      const originalRankYear = rankYear?.textContent;
+      const originalRankOvr = rankOvr?.textContent;
 
       const showHidden = () => {
         avgRating.textContent = "?";
@@ -50,12 +59,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (rankOvr) rankOvr.textContent = "?";
 
         // strip bold state from track titles
-        const trackBoldState = Array.from(trackRatings).map(track => {
+        const trackBoldState = [...trackRatings].map(track => {
           const songLink = track.closest(".tracklist_line")?.querySelector(".song");
           const starImg = track.closest(".page_release_section_tracks_track_stats_score_star")?.querySelector("img");
           const wasBolded = songLink?.classList.contains("bolded");
-          songLink?.classList.remove("bolded");
-          starImg?.classList.replace("metadata-star-bold", "metadata-star");
+          setTrackBoldStyle(songLink, starImg, false);
           return wasBolded;
         });
 
@@ -83,18 +91,12 @@ document.addEventListener("DOMContentLoaded", () => {
             trackRatingsVisible = !trackRatingsVisible;
             trackRatings.forEach((track, i) => {
               track.textContent = trackRatingsVisible ? originalTrackRatings[i] : "?";
-              const songLink = track.closest(".tracklist_line")?.querySelector(".song");
-              const starImg = track
-                .closest(".page_release_section_tracks_track_stats_score_star")
-                ?.querySelector("img");
               if (trackBoldState[i]) {
-                if (trackRatingsVisible) {
-                  songLink?.classList.add("bolded");
-                  starImg?.classList.replace("metadata-star", "metadata-star-bold");
-                } else {
-                  songLink?.classList.remove("bolded");
-                  starImg?.classList.replace("metadata-star-bold", "metadata-star");
-                }
+                const songLink = track.closest(".tracklist_line")?.querySelector(".song");
+                const starImg = track
+                  .closest(".page_release_section_tracks_track_stats_score_star")
+                  ?.querySelector("img");
+                setTrackBoldStyle(songLink, starImg, trackRatingsVisible);
               }
             });
             trackToggleBtn.textContent = trackRatingsVisible ? "Hide ratings" : "Show ratings";
@@ -104,7 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // add toggle button to rate/catalog header
         let albumRatingVisible = false;
         let catalogToggleBtn = null;
-        const catalogHeader = Array.from(document.querySelectorAll(".release_page_header")).find(el =>
+        const catalogHeader = [...document.querySelectorAll(".release_page_header")].find(el =>
           el.querySelector("h2")?.textContent.includes("Rate/Catalog"),
         );
         if (catalogHeader) {
@@ -118,8 +120,8 @@ document.addEventListener("DOMContentLoaded", () => {
           catalogToggleBtn.addEventListener("click", () => {
             albumRatingVisible = !albumRatingVisible;
             avgRating.textContent = albumRatingVisible ? originalAlbumRating : "?";
-            if (rankYear) rankYear.textContent = albumRatingVisible ? originalrankYear : "?";
-            if (rankOvr) rankOvr.textContent = albumRatingVisible ? originalrankOvr : "?";
+            if (rankYear) rankYear.textContent = albumRatingVisible ? originalRankYear : "?";
+            if (rankOvr) rankOvr.textContent = albumRatingVisible ? originalRankOvr : "?";
             catalogToggleBtn.textContent = albumRatingVisible ? "Hide ratings" : "Show ratings";
           });
         }
@@ -136,15 +138,15 @@ document.addEventListener("DOMContentLoaded", () => {
             trackRatings.forEach((track, i) => {
               track.textContent = originalTrackRatings[i];
               if (trackBoldState[i]) {
-                track.closest(".tracklist_line")?.querySelector(".song")?.classList.add("bolded");
-                track
+                const songLink = track.closest(".tracklist_line")?.querySelector(".song");
+                const starImg = track
                   .closest(".page_release_section_tracks_track_stats_score_star")
-                  ?.querySelector("img")
-                  ?.classList.replace("metadata-star", "metadata-star-bold");
+                  ?.querySelector("img");
+                setTrackBoldStyle(songLink, starImg, true);
               }
             });
-            if (rankYear) rankYear.textContent = originalrankYear;
-            if (rankOvr) rankOvr.textContent = originalrankOvr;
+            if (rankYear) rankYear.textContent = originalRankYear;
+            if (rankOvr) rankOvr.textContent = originalRankOvr;
             trackToggleBtn?.remove();
             separator?.remove();
             catalogToggleBtn?.remove();
@@ -180,9 +182,8 @@ document.addEventListener("DOMContentLoaded", () => {
       checkRatingNum();
     } else if (path.startsWith("/artist/")) {
       // selectors
-      const discoAvgRatings = document.querySelectorAll(".disco_avg_rating");
       const songRatings = document.querySelectorAll(".page_artist_tracks_track_stats_rating");
-      const originalSongRatings = Array.from(songRatings).map(r => r.textContent);
+      const originalSongRatings = [...songRatings].map(r => r.textContent);
       const discoCats = document.querySelectorAll(".disco_cat");
       const songGuide = document.querySelector(".page_artist_section_song_guide");
 
@@ -224,17 +225,14 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // hide songs by default
-      const songBoldState = [];
-      songRatings.forEach(song => {
+      const songBoldState = [...songRatings].map(song => {
         song.textContent = "?";
         const songRow = song.closest(".page_artist_songs_song");
         const wasBolded = !!songRow.querySelector(".bolded");
-        songBoldState.push(wasBolded);
-
         if (wasBolded) {
-          songRow.querySelector(".song").classList.remove("bolded");
-          songRow.querySelector("img").classList.replace("metadata-star-bold", "metadata-star");
+          setTrackBoldStyle(songRow.querySelector(".song"), songRow.querySelector("img"), false);
         }
+        return wasBolded;
       });
 
       // add toggle button to song guide
@@ -249,15 +247,9 @@ document.addEventListener("DOMContentLoaded", () => {
           songRatingsVisible = !songRatingsVisible;
           songRatings.forEach((song, i) => {
             song.textContent = songRatingsVisible ? originalSongRatings[i] : "?";
-            const songRow = song.closest(".page_artist_songs_song");
             if (songBoldState[i]) {
-              if (songRatingsVisible) {
-                songRow.querySelector(".song").classList.add("bolded");
-                songRow.querySelector("img").classList.replace("metadata-star", "metadata-star-bold");
-              } else {
-                songRow.querySelector(".song").classList.remove("bolded");
-                songRow.querySelector("img").classList.replace("metadata-star-bold", "metadata-star");
-              }
+              const songRow = song.closest(".page_artist_songs_song");
+              setTrackBoldStyle(songRow.querySelector(".song"), songRow.querySelector("img"), songRatingsVisible);
             }
           });
           toggleBtn.textContent = songRatingsVisible ? "Hide ratings" : "Show ratings";
