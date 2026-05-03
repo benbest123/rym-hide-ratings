@@ -14,7 +14,7 @@
 
   "browser_specific_settings": {
     "gecko": {
-      "id": "rym-hide-ratings@mozilla.org",
+      "id": "rym-hide-ratings@benbest",
       "data_collection_permissions": {
         "required": ["none"]
       }
