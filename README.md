@@ -8,10 +8,9 @@ This works on release pages and artist pages, and only works if you are logged i
 
 ### On release pages
 
-- Track ratings are hidden and unbolded if you haven't rated the release.
-- Release rating and ranks are hidden if you haven't rated the release.
-- You can toggle both track and release ratings if you haven't rated the release.
-- If you have rated the release, all ratings will be visible.
+- Release rating and ranks are hidden if you haven't rated the release, and can be toggled.
+- If you have rated the release, release ratings will be visible.
+- Track ratings are hidden and unbolded, and can be toggled.
 
 ### On artist pages
 
