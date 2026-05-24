@@ -34,84 +34,103 @@ if (!document.documentElement.dataset.rymHide) {
       }
     };
 
+    // Returns the appropriate button label for a given visibility state.
+    const toggleText = visible => (visible ? "Hide ratings" : "Show ratings");
+
     if (isLoggedIn) {
       if (path.startsWith("/release/")) {
-        // on release page
-
         const avgRating = document.querySelector(".avg_rating");
         const trackRatings = document.querySelectorAll(".page_release_section_tracks_track_stats_rating");
-        const albumInfoTable = document.querySelector(".album_info");
-        const rank = albumInfoTable.rows[4];
+        const rank = document.querySelector(".album_info").rows[4];
         const rankYear = rank?.querySelectorAll("td b")[0];
         const rankOvr = rank?.querySelectorAll("td b")[1];
         const ratingNum = document.querySelector(".my_catalog_rating .rating_num");
         const ratingWidget = document.querySelector(".my_catalog_rating");
         const ratingStars = document.querySelector(".rating_stars");
 
+        // Capture originals before any mutations are applied.
         const originalAlbumRating = avgRating.textContent;
         const originalTrackRatings = [...trackRatings].map(r => r.textContent);
         const originalRankYear = rankYear?.textContent;
         const originalRankOvr = rankOvr?.textContent;
 
-        const showHidden = () => {
-          avgRating.textContent = "?";
-          trackRatings.forEach(track => {
-            track.textContent = "?";
+        // Hides which tracks appear bolded as this gives an indication of rating.
+        // Restored when ratings are shown.
+        const trackBoldState = [...trackRatings].map(track => {
+          const songLink = track.closest(".tracklist_line")?.querySelector(".song");
+          const starImg = track.closest(".page_release_section_tracks_track_stats_score_star")?.querySelector("img");
+          const wasBolded = songLink?.classList.contains("bolded");
+          setTrackBoldStyle(songLink, starImg, false);
+          return wasBolded;
+        });
+
+        // Replace track rating text with "?". Also unbold any rated tracks in the
+        // expandable .tracklist_title section.
+        trackRatings.forEach(track => {
+          track.textContent = "?";
+        });
+        document.querySelectorAll(".tracklist_title .song.bolded").forEach(el => {
+          el.classList.remove("bolded");
+        });
+
+        // Inserts a "Show ratings" toggle button into the track listing section header.
+        // Called from both the rated and unrated paths once ratingNum has settled.
+        let trackRatingsVisible = false;
+        const setupTrackToggle = () => {
+          if (document.querySelector(".rym-hide-track-btn")) return;
+
+          // find the visible .section_tracklisting (RYM may have a hidden template copy)
+          const liveSection = Array.from(document.querySelectorAll(".section_tracklisting")).find(
+            el => el.offsetParent !== null,
+          );
+          const trackHeader =
+            document.querySelector("#track_credit_show_link_tracks")?.closest(".release_page_header") ||
+            liveSection?.querySelector(".release_page_header");
+          if (!trackHeader) return;
+
+          const trackToggleBtn = document.createElement("div");
+          trackToggleBtn.className = "rym-hide-track-btn";
+          trackToggleBtn.textContent = "Show ratings";
+          trackToggleBtn.style.cssText =
+            "float:right; display:inline-block; font-size:.8em; color:var(--gen-blue-dark); cursor:pointer; line-height:1.2em;";
+
+          if (trackHeader.querySelector("#track_credit_show_link_tracks")) {
+            const separator = document.createElement("span");
+            separator.textContent = " | ";
+            separator.style.cssText = "float:right; font-size:.8em; line-height:1.2em; margin: 0 4px;";
+            trackHeader.insertBefore(separator, trackHeader.firstChild);
+          }
+          trackHeader.insertBefore(trackToggleBtn, trackHeader.firstChild);
+
+          trackToggleBtn.addEventListener("click", () => {
+            trackRatingsVisible = !trackRatingsVisible;
+            trackRatings.forEach((track, i) => {
+              track.textContent = trackRatingsVisible ? originalTrackRatings[i] : "?";
+              if (trackBoldState[i]) {
+                const songLink = track.closest(".tracklist_line")?.querySelector(".song");
+                const starImg = track
+                  .closest(".page_release_section_tracks_track_stats_score_star")
+                  ?.querySelector("img");
+                setTrackBoldStyle(songLink, starImg, trackRatingsVisible);
+              }
+            });
+            trackToggleBtn.textContent = toggleText(trackRatingsVisible);
           });
+        };
+
+        // Sets up the page for a release the user hasn't yet rated: hides the album
+        // rating and rank, adds a reveal toggle button, and auto-reveals the album rating
+        // (but not track ratings) if the user rates the release during the session.
+        const initUnratedPage = () => {
+          avgRating.textContent = "?";
           if (rankYear) rankYear.textContent = "?";
           if (rankOvr) rankOvr.textContent = "?";
 
-          // strip bold state from track titles
-          const trackBoldState = [...trackRatings].map(track => {
-            const songLink = track.closest(".tracklist_line")?.querySelector(".song");
-            const starImg = track.closest(".page_release_section_tracks_track_stats_score_star")?.querySelector("img");
-            const wasBolded = songLink?.classList.contains("bolded");
-            setTrackBoldStyle(songLink, starImg, false);
-            return wasBolded;
-          });
-
           hideStyle.remove();
+          setupTrackToggle();
 
-          // unbold bolded tracks in the expandable user-rating section
-          document.querySelectorAll(".tracklist_title .song.bolded").forEach(el => {
-            el.classList.remove("bolded");
-          });
-
-          // add toggle button to track listing header
-          let trackRatingsVisible = false;
-          let trackToggleBtn = null;
-          let separator = null;
-          const trackHeader = document.querySelector("#track_credit_show_link_tracks")?.closest(".release_page_header");
-          if (trackHeader) {
-            trackToggleBtn = document.createElement("div");
-            trackToggleBtn.textContent = "Show ratings";
-            trackToggleBtn.style.cssText =
-              "float:right; display:inline-block; font-size:.8em; color:var(--gen-blue-dark); cursor:pointer; line-height:1.2em;";
-
-            separator = document.createElement("span");
-            separator.textContent = " | ";
-            separator.style.cssText = "float:right; font-size:.8em; line-height:1.2em; margin: 0 4px;";
-
-            trackHeader.appendChild(separator);
-            trackHeader.appendChild(trackToggleBtn);
-
-            trackToggleBtn.addEventListener("click", () => {
-              trackRatingsVisible = !trackRatingsVisible;
-              trackRatings.forEach((track, i) => {
-                track.textContent = trackRatingsVisible ? originalTrackRatings[i] : "?";
-                if (trackBoldState[i]) {
-                  const songLink = track.closest(".tracklist_line")?.querySelector(".song");
-                  const starImg = track
-                    .closest(".page_release_section_tracks_track_stats_score_star")
-                    ?.querySelector("img");
-                  setTrackBoldStyle(songLink, starImg, trackRatingsVisible);
-                }
-              });
-              trackToggleBtn.textContent = trackRatingsVisible ? "Hide ratings" : "Show ratings";
-            });
-          }
-
-          // add toggle button to rate/catalog header
+          // Add a toggle button to the Rate/Catalog section header so the user can
+          // reveal the album rating and rank without needing to rate the release.
           let albumRatingVisible = false;
           let catalogToggleBtn = null;
           const catalogHeader = [...document.querySelectorAll(".release_page_header")].find(el =>
@@ -130,11 +149,13 @@ if (!document.documentElement.dataset.rymHide) {
               avgRating.textContent = albumRatingVisible ? originalAlbumRating : "?";
               if (rankYear) rankYear.textContent = albumRatingVisible ? originalRankYear : "?";
               if (rankOvr) rankOvr.textContent = albumRatingVisible ? originalRankOvr : "?";
-              catalogToggleBtn.textContent = albumRatingVisible ? "Hide ratings" : "Show ratings";
+              catalogToggleBtn.textContent = toggleText(albumRatingVisible);
             });
           }
 
-          // watch for user clicking a star to confirm rating
+          // ratingObserver fires on any class change to ratingStars, including hover
+          // effects. The `clicked` flag ensures we only reveal ratings on a confirmed
+          // user action, not on incidental mutations triggered by mousing over stars.
           let clicked = false;
           ratingWidget.addEventListener("click", () => {
             clicked = true;
@@ -161,12 +182,13 @@ if (!document.documentElement.dataset.rymHide) {
         const checkRatingNum = () => {
           const val = parseFloat(ratingNum.textContent.trim());
           if (!isNaN(val) && val > 0) {
-            // already rated — just reveal
+            // already rated — reveal album rating but keep track ratings hidden
             hideStyle.remove();
+            setupTrackToggle();
             ratingNumObserver.disconnect();
           } else if (isNaN(val)) {
             // unrated (text is "---" or similar)
-            showHidden();
+            initUnratedPage();
             ratingNumObserver.disconnect();
           }
           // val === 0 means still initialising, keep watching
@@ -177,13 +199,13 @@ if (!document.documentElement.dataset.rymHide) {
         // check immediately in case RYM already updated before observer was ready (e.g. tab restored from suspend)
         checkRatingNum();
       } else if (path.startsWith("/artist/")) {
-        // selectors
         const songRatings = document.querySelectorAll(".page_artist_tracks_track_stats_rating");
         const originalSongRatings = [...songRatings].map(r => r.textContent);
         const discoCats = document.querySelectorAll(".disco_cat");
         const songGuide = document.querySelector(".page_artist_section_song_guide");
 
-        // only hide unrated releases
+        // .disco_cat elements without a .disco_cat_inner child are unrated individual
+        // releases. Those with .disco_cat_inner are section headers — skip them.
         discoCats.forEach(rel => {
           if (!rel.querySelector(".disco_cat_inner")) {
             const release = rel.closest(".disco_release");
@@ -202,7 +224,7 @@ if (!document.documentElement.dataset.rymHide) {
           const discoToggleBtn = document.createElement("a");
           discoToggleBtn.textContent = "Show ratings";
           discoToggleBtn.style.cursor = "pointer";
-          discoToggleBtn.style.fontSize = "19.95px";
+          discoToggleBtn.style.fontSize = "19.95px"; // match RYM's nav link size
           discoNav.querySelector(".artist_page_section").append(discoToggleBtn);
 
           discoToggleBtn.addEventListener("click", () => {
@@ -216,11 +238,11 @@ if (!document.documentElement.dataset.rymHide) {
                 if (boldTitle) boldTitle.style.fontWeight = discoRatingsVisible ? "" : "normal";
               }
             });
-            discoToggleBtn.textContent = discoRatingsVisible ? "Hide ratings" : "Show ratings";
+            discoToggleBtn.textContent = toggleText(discoRatingsVisible);
           });
         }
 
-        // hide songs by default
+        // Record bold state for each rated song, then hide its rating text and remove bold.
         const songBoldState = [...songRatings].map(song => {
           song.textContent = "?";
           const songRow = song.closest(".page_artist_songs_song");
@@ -248,7 +270,7 @@ if (!document.documentElement.dataset.rymHide) {
                 setTrackBoldStyle(songRow.querySelector(".song"), songRow.querySelector("img"), songRatingsVisible);
               }
             });
-            toggleBtn.textContent = songRatingsVisible ? "Hide ratings" : "Show ratings";
+            toggleBtn.textContent = toggleText(songRatingsVisible);
           });
         }
         hideStyle.remove();
