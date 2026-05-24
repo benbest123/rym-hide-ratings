@@ -72,6 +72,11 @@ if (!document.documentElement.dataset.rymHide) {
 
           hideStyle.remove();
 
+          // unbold bolded tracks in the expandable user-rating section
+          document.querySelectorAll(".tracklist_title .song.bolded").forEach(el => {
+            el.classList.remove("bolded");
+          });
+
           // add toggle button to track listing header
           let trackRatingsVisible = false;
           let trackToggleBtn = null;
