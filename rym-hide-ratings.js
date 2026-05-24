@@ -143,20 +143,8 @@ if (!document.documentElement.dataset.rymHide) {
           const ratingObserver = new MutationObserver(() => {
             if (clicked && !ratingStars.classList.contains("star-0m")) {
               avgRating.textContent = originalAlbumRating;
-              trackRatings.forEach((track, i) => {
-                track.textContent = originalTrackRatings[i];
-                if (trackBoldState[i]) {
-                  const songLink = track.closest(".tracklist_line")?.querySelector(".song");
-                  const starImg = track
-                    .closest(".page_release_section_tracks_track_stats_score_star")
-                    ?.querySelector("img");
-                  setTrackBoldStyle(songLink, starImg, true);
-                }
-              });
               if (rankYear) rankYear.textContent = originalRankYear;
               if (rankOvr) rankOvr.textContent = originalRankOvr;
-              trackToggleBtn?.remove();
-              separator?.remove();
               catalogToggleBtn?.remove();
               ratingObserver.disconnect();
             }
